@@ -130,7 +130,19 @@ class CI_Config {
 				continue;
 			}
 
-			include($file_path);
+            // Merge config across environments,
+            // The default configuration files (the ones with no environment subdirectory)
+            // are treated as the parent always, even to production.
+            if ( count($check_locations) == 2)
+            {
+                $config = config_load_and_merge(
+                    $path.'config/'.$check_locations[1].'.php',
+                    $path.'config/'.$check_locations[0].'.php');
+            }
+            else
+            {
+                include($file_path);
+            }
 
 			if ( ! isset($config) OR ! is_array($config))
 			{

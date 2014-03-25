@@ -235,23 +235,29 @@ if ( ! function_exists('get_config'))
 		{
 			$file_path = APPPATH.'config/config.php';
 			$found = FALSE;
-			if (file_exists($file_path))
-			{
-				$found = TRUE;
-				require($file_path);
-			}
-
-			// Is the config file in the environment folder?
-			if (file_exists($file_path = APPPATH.'config/'.ENVIRONMENT.'/config.php'))
-			{
-				require($file_path);
-			}
-			elseif ( ! $found)
+			if (!file_exists($file_path))
 			{
 				set_status_header(503);
 				echo 'The configuration file does not exist.';
 				exit(3); // EXIT_CONFIG
 			}
+
+            // Is the config file in the environment folder?
+            // @note Suppress errors in case ENVIRONMENT is not defined yet
+            $env_file_path = @APPPATH.'config/'.ENVIRONMENT.'/config.php';
+            if ( defined('ENVIRONMENT')  &&
+                 file_exists($file_path) &&
+                 file_exists($env_file_path) )
+            {
+                // Fetch and merge the config file
+                $config = config_load_and_merge($file_path, $env_file_path);
+            }
+            else
+            {
+                // Fetch the config file
+                $found = TRUE;
+                require($file_path);
+            }
 
 			// Does the $config array exist in the file?
 			if ( ! isset($config) OR ! is_array($config))
@@ -796,6 +802,129 @@ if ( ! function_exists('function_usable'))
 
 		return FALSE;
 	}
+}
+
+// ------------------------------------------------------------------------
+if ( ! function_exists('config_load_and_merge'))
+{
+
+  /**
+   * Since folks can name their configuration array whatever they want
+   * we're not going to know what it is. EG $db, $mimes, $config, etc.
+   * Let's assume that there will only be one array globally defined
+   * per configuration file. That sounds pretty reasonable.
+   *
+   * @access public
+   * @return array
+   */ 
+  function config_load_and_merge($sParentFile, $sChildFile)
+  {
+      // Let's use some detection to determine what the new config array is named
+      $a = get_defined_vars();
+      require $sParentFile;
+      $b = get_defined_vars();
+      unset($b['a']);
+      $diff = array_diff(array_keys($b), array_keys($a));
+
+      // There are some other variables besides the array maybe, let's look
+      if(count($diff) > 1) {
+        $found      = false;
+        $config_key = '';
+        foreach($diff as $k => $v) {
+          if(is_array($v) && !$found)
+              $config_key = $k;
+
+          // Bail if more than one array is found in the config file
+          elseif(is_array($v) && $found)
+              return array();
+        }
+      }
+      // Only one new variable
+      else
+      {
+        reset($diff);
+        $config_key = current($diff);
+        if(!is_array($$config_key))
+          return array();
+      }
+
+        // If there were no arrays in the config file, bail
+        if($config_key === '')
+          return array();
+
+        // Grab the parent config
+        $aParentConfig = $$config_key;
+
+      // Unset $config_key before loading the second file, so we can
+      // at least tell if it defines the same variable
+      unset($$config_key);
+      require $sChildFile;
+
+      // No child config, but we can still live w/ the parent config
+      // May want to issue a warning here
+      if(!isset($$config_key) || !is_array($$config_key)) {
+        return $aParentConfig;
+      }
+
+      return array_merge_deep($aParentConfig, $$config_key);
+  }
+}
+
+// ------------------------------------------------------------------------
+
+if ( ! function_exists('array_merge_deep'))
+{
+    /**
+     * Recursive array merge, taken from Symfony
+     * (Can't remember what version, 1.4.x maybe.)
+     *
+     * @access private
+     * @return array
+     */
+    function array_merge_deep()
+      {
+        switch (func_num_args())
+        {   
+          case 0:
+            return false;
+          case 1:
+            return func_get_arg(0);
+          case 2:
+            $args = func_get_args();
+            $args[2] = array();
+            if (is_array($args[0]) && is_array($args[1]))
+            {   
+              foreach (array_unique(array_merge(array_keys($args[0]),array_keys($args[1]))) as $key)
+              {   
+                $isKey0 = array_key_exists($key, $args[0]);
+                $isKey1 = array_key_exists($key, $args[1]);
+                if ($isKey0 && $isKey1 && is_array($args[0][$key]) && is_array($args[1][$key]))
+                {   
+                  $args[2][$key] = array_merge_deep($args[0][$key], $args[1][$key]);
+                }   
+                else if ($isKey0 && $isKey1)
+                {   
+                  $args[2][$key] = $args[1][$key];
+                }   
+                else if (!$isKey1)
+                {   
+                  $args[2][$key] = $args[0][$key];
+                }   
+                else if (!$isKey0)
+                {   
+                  $args[2][$key] = $args[1][$key];
+                }   
+              }   
+              return $args[2];
+            }   
+            else
+            {   
+              return $args[1];
+            }   
+          default:
+              return false;
+        }   
+      }
 }
 
 /* End of file Common.php */
