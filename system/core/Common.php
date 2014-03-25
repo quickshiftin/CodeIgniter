@@ -858,7 +858,8 @@ if ( ! function_exists('config_load_and_merge'))
       // Unset $config_key before loading the second file, so we can
       // at least tell if it defines the same variable
       unset($$config_key);
-      require $sChildFile;
+      if(file_exists($sChildFile))
+          include $sChildFile;
 
       // No child config, but we can still live w/ the parent config
       // May want to issue a warning here
