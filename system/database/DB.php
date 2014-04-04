@@ -39,10 +39,15 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  */
 function &DB($params = '', $query_builder_override = NULL)
 {
+    // These db config variables are now passed globally
+    global $active_group;
+    global $active_record;
+
 	// Load the DB config file if a DSN string wasn't passed
 	if (is_string($params) && strpos($params, '://') === FALSE)
 	{
         // Use the configuration system to load database config
+        $ci = get_instance();
         $ci->config->load('database', true);
 		$db = $ci->config->item('database');
 

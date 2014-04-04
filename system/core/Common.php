@@ -831,17 +831,19 @@ if ( ! function_exists('config_load_and_merge'))
         $found      = false;
         $config_key = '';
         foreach($diff as $var_name) {
-          if(is_array($$var_name) && !$found) {
+          // The current key is an array and we haven't found the config
+          // array yet, assume this is the config array
+          if(is_array($$var_name) && !$found)
               $config_key = $var_name;
-          }
+
           // Bail if more than one array is found in the config file
           elseif(is_array($$var_name) && $found)
               return array();
-          else {
-            // XXX Need proper support for overriden global variables
-            //     like database.php/$active_group
-            ;
-          }
+
+          else
+            // Support for overriden global variables
+            // like database.php/$active_group
+            $GLOBALS[$var_name] = $$var_name;
         }
       }
       // Only one new variable
