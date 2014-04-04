@@ -87,16 +87,8 @@ class CI_Hooks {
 			return;
 		}
 
-		// Grab the "hooks" definition file.
-		if (file_exists(APPPATH.'config/'.ENVIRONMENT.'/hooks.php'))
-		{
-			include(APPPATH.'config/'.ENVIRONMENT.'/hooks.php');
-		}
-
-		if (file_exists(APPPATH.'config/hooks.php'))
-		{
-			include(APPPATH.'config/hooks.php');
-		}
+        $CFG->load('hooks', true);
+        $hook = $this->config->item('hooks');
 
 		// If there are no hooks, we're done.
 		if ( ! isset($hook) OR ! is_array($hook))
