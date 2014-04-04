@@ -42,29 +42,9 @@ function &DB($params = '', $query_builder_override = NULL)
 	// Load the DB config file if a DSN string wasn't passed
 	if (is_string($params) && strpos($params, '://') === FALSE)
 	{
-		// Is the config file in the environment folder?
-		if ( ! file_exists($file_path = APPPATH.'config/'.ENVIRONMENT.'/database.php')
-			&& ! file_exists($file_path = APPPATH.'config/database.php'))
-		{
-			show_error('The configuration file database.php does not exist.');
-		}
-
-		include($file_path);
-		// Make packages contain database config files
-		foreach (get_instance()->load->get_package_paths() as $path)
-		{
-			if ($path !== APPPATH)
-			{
-				if (file_exists($file_path = $path.'config/'.ENVIRONMENT.'/database.php'))
-				{
-					include($file_path);
-				}
-				elseif (file_exists($file_path = $path.'config/database.php'))
-				{
-					include($file_path);
-				}
-			}
-		}
+        // Use the configuration system to load database config
+        $ci->config->load('database', true);
+		$db = $ci->config->item('database');
 
 		if ( ! isset($db) OR count($db) === 0)
 		{

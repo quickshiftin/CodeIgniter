@@ -190,16 +190,13 @@ class CI_Router {
 			return;
 		}
 
-		// Load the routes.php file.
-		if (file_exists(APPPATH.'config/routes.php'))
-		{
-			include(APPPATH.'config/routes.php');
-		}
+        // Use the configuration system to load routing config
+        $this->config->load('routes', true);
+		$this->routes = $this->config->item('routes');
 
-		if (file_exists(APPPATH.'config/'.ENVIRONMENT.'/routes.php'))
-		{
-			include(APPPATH.'config/'.ENVIRONMENT.'/routes.php');
-		}
+		// Set the default controller so we can display it in the event
+		// the URI doesn't correlated to a valid controller.
+		$this->default_controller = ( ! isset($this->routes['default_controller']) OR $this->routes['default_controller'] == '') ? FALSE : strtolower($this->routes['default_controller']);
 
 		// Validate & get reserved routes
 		if (isset($route) && is_array($route))
